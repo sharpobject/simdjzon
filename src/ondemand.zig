@@ -397,7 +397,8 @@ pub const Iterator = struct {
 
     pub fn advance(iter: *Iterator, peek_len: u16) ![*]const u8 {
         defer iter.token.index += 1;
-        // print("advance '{s}'\n", .{(try iter.token.peek(iter.token.index, len))[0..len]});
+        // std.debug.print("advance '{s}'\n", .{(try iter.parser.peek(iter.token.index, peek_len))[0..peek_len]});
+        // std.debug.print("advance iter {*} iter.token.index {*} tail.items.len {}\n", .{ iter, iter.token.index, iter.parser.parser.indexer.bit_indexer.tail.items.len });
         return iter.parser.peek(iter.token.index, peek_len);
     }
     pub fn peek(iter: *Iterator, index: [*]const u32, len: u16) ![*]const u8 {

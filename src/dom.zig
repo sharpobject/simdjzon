@@ -5,7 +5,6 @@ const os = std.os;
 const assert = std.debug.assert;
 usingnamespace @import("vector_types.zig");
 usingnamespace @import("llvm_intrinsics.zig");
-usingnamespace @import("c_intrinsics.zig");
 const string_parsing = @import("string_parsing.zig");
 const number_parsing = @import("number_parsing.zig");
 const atom_parsing = @import("atom_parsing.zig");
@@ -119,13 +118,36 @@ const Utf8Checker = struct {
     prev_incomplete: u8x32 = [1]u8{0} ** 32,
 
     fn prev(comptime N: u8, chunk: u8x32, prev_chunk: u8x32) u8x32 {
-        return switch (N) {
-            1 => _prev1(chunk, prev_chunk),
-            2 => _prev2(chunk, prev_chunk),
-            3 => _prev3(chunk, prev_chunk),
+        // const result = switch (N) {
+        //     1 => _prev1(chunk, prev_chunk),
+        //     2 => _prev2(chunk, prev_chunk),
+        //     3 => _prev3(chunk, prev_chunk),
+        //     else => unreachable,
+        // };
+        const result_zig = prevZig(N, chunk, prev_chunk);
+        // _ = result_zig;
+        // const sr = @as([32]u8, result);
+        // const sz = @as([32]u8, result_zig);
+        // // assert(mem.eql(u8, &sr, &sz));
+        // if (!mem.eql(u8, &sr, &sz)) {
+        //     std.debug.print("N: {}\nexpected{s}\nactual  {s}\n", .{ N, sr, sz });
+
+        //     std.debug.panic("should be unreachable _prev{}() != prevZig{}", .{ N, N });
+        //     //     assert(false);
+        // }
+        return result_zig;
+        // }
+    }
+    fn prevZig(comptime N: u8, chunk: u8x32, prev_chunk: u8x32) u8x32 {
+        const result = switch (N) {
+            1 => @shuffle(u8, chunk, prev_chunk, [32]i32{ -32, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30 }),
+            2 => @shuffle(u8, chunk, prev_chunk, [32]i32{ -31, -32, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29 }),
+            3 => @shuffle(u8, chunk, prev_chunk, [32]i32{ -30, -31, -32, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28 }),
             else => unreachable,
         };
+        return result;
     }
+
     // zig fmt: off
     inline fn check_special_cases(input: u8x32, prev1: u8x32) u8x32 {
         // Bit 0 = Too Short (lead byte/ASCII followed by lead byte/ASCII)
@@ -1213,13 +1235,25 @@ pub const Parser = struct {
         // Then we xor with prev_in_string: if we were in a string already, its effect is flipped
         // (characters inside strings are outside, and characters outside strings are inside).
         //
-        const ones: u64x2 = [1]u64{std.math.maxInt(u64)} ** 2;
-        var in_string = carrylessMul(.{ quote, 0 }, ones)[0];
+        const in_string = if (std.Target.current.cpu.arch == .x86_64) blk: {
+            const ones: u64x2 = [1]u64{std.math.maxInt(u64)} ** 2;
+            const in_str = carrylessMul(.{ quote, 0 }, ones)[0];
+            break :blk in_str ^ parser.prev_in_string;
+        } else if (std.Target.current.cpu.arch == .aarch64) blk: {
+            var bitmask = quote;
+            bitmask ^= bitmask << 1;
+            bitmask ^= bitmask << 2;
+            bitmask ^= bitmask << 4;
+            bitmask ^= bitmask << 8;
+            bitmask ^= bitmask << 16;
+            bitmask ^= bitmask << 32;
+            break :blk bitmask ^ parser.prev_in_string;
+        } else @compileError(comptime std.fmt.comptimePrint("unsupported cpu arch {}", .{std.Target.current.cpu.arch}));
+
         // println("{b:0>64} | quote a", .{@bitReverse(u64, quote)});
         // println("{b:0>64} | ones[0]", .{@bitReverse(u64, ones[0])});
         // println("{b:0>64} | in_string a", .{@bitReverse(u64, in_string)});
         // println("{b:0>64} | prev_in_string a", .{@bitReverse(u64, parser.prev_in_string)});
-        in_string ^= parser.prev_in_string;
         // println("{b:0>64} | in_string b", .{@bitReverse(u64, in_string)});
 
         //

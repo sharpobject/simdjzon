@@ -297,7 +297,7 @@ fn test_ondemand_doc(input: []const u8, expected: fn (doc: *ondemand.Document) E
     try expected(&doc);
 }
 
-test "ondemand struct find_field" {
+test "ondemand object find_field" {
     try test_ondemand_doc(
         \\ {"x": 1, "y": 2, "z": {"a": 33}}
     , struct {
@@ -308,7 +308,7 @@ test "ondemand struct find_field" {
         }
     }.func);
 }
-test "ondemand struct iteration" {
+test "ondemand object iteration" {
     try test_ondemand_doc(
         \\ {"x": 1, "y": 2}
     , struct {
@@ -332,7 +332,7 @@ test "ondemand struct iteration" {
     }.func);
 }
 
-test "ondemand struct iteration types" {
+test "ondemand object iteration types" {
     try test_ondemand_doc(
         \\ {"str": "strval", "f": 1.23, "t": true, "not": false, "n": null, "neg": -42 }
     , struct {

@@ -3,7 +3,11 @@ const std = @import("std");
 fn setup(step: *std.build.LibExeObjStep, mode: std.builtin.Mode, target: anytype, step_128: bool, ondemand: bool, ondemand_read_cap: u16) void {
     step.addCSourceFile("src/utils.c", &[_][]const u8{ "-Wall", "-Wextra", "-Werror", "-O3" });
     step.setTarget(target);
-    step.linkLibC();
+    // workaround for some kind of bug in debug builds which
+    // manifests as bit_indexer.tail.items segfault
+    if (mode == .Debug)
+        step.setBuildMode(.ReleaseSafe)
+    else
     step.setBuildMode(mode);
     step.addBuildOption(bool, "step_128", step_128);
     step.addBuildOption(bool, "ondemand", ondemand);

@@ -8,15 +8,15 @@ pub inline fn carrylessMul(a: u64x2, b: u64x2) u64x2 {
         @"llvm.x86.pclmulqdq"(@bitCast(i64x2, a), @bitCast(i64x2, b), 0),
     );
 }
-test "pclmulqdq" {
-    const a = 0b10100010;
-    const b = 0b10010110;
-    const expected = @as(u64, 0b101100011101100);
-    const av: u64x2 = .{ a, 0 };
-    const bv: u64x2 = .{ b, 0 };
-    const r = carrylessMul(av, bv);
-    try std.testing.expectEqual(expected, r[0]);
-}
+// test "pclmulqdq" {
+//     const a = 0b10100010;
+//     const b = 0b10010110;
+//     const expected = @as(u64, 0b101100011101100);
+//     const av: u64x2 = .{ a, 0 };
+//     const bv: u64x2 = .{ b, 0 };
+//     const r = carrylessMul(av, bv);
+//     try std.testing.expectEqual(expected, r[0]);
+// }
 
 extern fn @"llvm.x86.avx2.pshuf.b"(a: u8x32, b: u8x32) u8x32;
 pub inline fn shuffleEpi8(a: u8x32, b: u8x32) u8x32 {
@@ -28,11 +28,11 @@ pub inline fn shuffleEpi32(a: u8x16, b: u8x16) u8x16 {
     return @"llvm.x86.ssse3.pshuf.b.128"(a, b);
 }
 
-test "pshufb" {
-    const x = shuffleEpi8(("a" ** 32).*, ("b" ** 32).*);
-    _ = x;
-    // std.debug.print("x {s}\n", .{@as([32]u8, x)});
-}
+// test "pshufb" {
+//     const x = shuffleEpi8(("a" ** 32).*, ("b" ** 32).*);
+//     _ = x;
+//     // std.debug.print("x {s}\n", .{@as([32]u8, x)});
+// }
 
 extern fn @"llvm.x86.vpalignr"(i64x2, i64x2, i8) i64x2;
 pub inline fn vpalignr(a: i64x2, b: i64x2, c: i8) i64x2 {
